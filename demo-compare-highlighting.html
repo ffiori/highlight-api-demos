@@ -1,0 +1,144 @@
+<html>
+<meta charset="utf-8"/>
+<style>
+  .highlighted-with-span {
+    background-color: rgba(255, 255, 0, 1);
+    color: red;
+  }
+
+  ::highlight(example-highlight) {
+    background-color: rgba(0, 255, 255, 0.5);
+    color: blue;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: justify;
+    font-size: 24;
+  }
+
+  button {
+    font-size: 24;
+  }
+
+  #div {
+    font-size: 40;
+  }
+
+  #node-description {
+    font-size: 16;
+  }
+</style>
+<body>
+<div id="div">
+Now you can give me format with the brand new Highlight API!<br>
+Just select a part of me and click on the buttons below &#128512;<br>
+You can also do the same with the traditional way of wrapping text with a span.<br>
+As a bonus, you can observe what happens with the DOM by using one method or another.<br>
+</div>
+<br>
+<button type="button" onclick="highlightSelectionWithAPIRange()">Highlight selection with API using Range</button>
+<button type="button" onclick="highlightSelectionWithAPIStaticRange()">Highlight selection with API using StaticRange</button>
+<button type="button" onclick="restoreWithAPI()">Clear API highlights</button>
+<br>
+<button type="button" onclick="highlightSelectionWithSpans()">Highlight selection with span</button>
+<button type="button" onclick="restoreWithSpans()">Clear highlighted spans</button>
+<br><br>
+<div>The node holding the text above looks as follows in the DOM:</div>
+<xmp id="node-description"></xmp>
+<script>
+  const highlightedWithSpanClass = "highlighted-with-span";
+
+  function showDivContent() {
+    let text = document.getElementById("div").outerHTML;
+    const openSpanString = `<span class="${highlightedWithSpanClass}">`;
+    const closeSpanString = '</span>';
+    var indentString = '\n';
+    for(var i = 0; i<text.length;) {
+      if(text.substr(i, openSpanString.length) === openSpanString) {
+        text = text.substring(0,i) + indentString + openSpanString + indentString + '\t' + text.substring(i+openSpanString.length);
+        i += indentString.length*2 + 1 + openSpanString.length;
+        indentString += '\t';
+      }
+      else if(text.substr(i, closeSpanString.length) === closeSpanString) {
+        indentString = indentString.substr(0,indentString.length-1);
+        text = text.substring(0,i) + indentString + closeSpanString + indentString + text.substring(i+closeSpanString.length);
+        i += indentString.length*2 + closeSpanString.length;
+      }
+      else if(text.substr(i, 5) === "<br>\n") {
+        text = text.substring(0,i) + "<br>" + indentString + text.substring(i + 5);
+        i += indentString.length + 4;
+      }
+      else { i++; }
+    }
+    text = text.replaceAll(/\n\t*\n/g,"\n");
+    document.getElementById("node-description").innerHTML = text;
+  }
+
+  showDivContent();
+
+  /************************************************************************/
+
+  function highlightSelectionWithSpans() {
+    if(window.getSelection().isCollapsed) return;
+    try {
+      let span = document.createElement('span');
+      span.className = highlightedWithSpanClass;
+      window.getSelection().getRangeAt(0).surroundContents(span);
+    } catch (error) {
+      alert("You can't cross a node boundary with a span! Try with a Highlight...");
+    }
+    showDivContent();
+  }
+
+  function highlightSelectionWithAPIRange() {
+    if(window.getSelection().isCollapsed) return;
+    let range = window.getSelection().getRangeAt(0);
+
+    if(CSS.highlights.has("example-highlight")) {
+      CSS.highlights.get("example-highlight").add(range);
+    }
+    else {
+      let highlight = new Highlight(range);
+      CSS.highlights.set("example-highlight", highlight);
+    }
+
+    showDivContent();
+  }
+
+  function highlightSelectionWithAPIStaticRange() {
+    if(window.getSelection().isCollapsed) return;
+    let range = new StaticRange(window.getSelection().getRangeAt(0));
+
+    if(CSS.highlights.has("example-highlight")) {
+      CSS.highlights.get("example-highlight").add(range);
+    }
+    else {
+      let highlight = new Highlight(range);
+      CSS.highlights.set("example-highlight", highlight);
+    }
+
+    showDivContent();
+  }
+
+  /************************************************************************/
+
+  function restoreWithSpans() {
+    // WARNING: this way of restoring the original spans is not ideal to be used
+    // in all situations. There may be better ways to do it depending on the
+    // application.
+    let div = document.getElementById("div");
+    let html = div.innerHTML;
+    html = div.innerHTML.replaceAll('<span class="highlighted-with-span">',"");
+    html = html.replaceAll('</span>',""); // note that this can delete spans with a different class than the used above.
+    div.innerHTML = html;
+    showDivContent();
+  }
+
+  function restoreWithAPI() {
+    CSS.highlights.delete("findings");
+    showDivContent();
+  }
+</script>
+</body>
+</html>
