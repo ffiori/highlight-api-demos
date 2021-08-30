@@ -19,6 +19,8 @@
 
   button {
     font-size: 24;
+    margin-top: 4px;
+    margin-bottom: 4px;
   }
 
   #div {
@@ -39,10 +41,10 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
 <br>
 <button type="button" onclick="highlightSelectionWithAPIRange()">Highlight selection with API using Range</button>
 <button type="button" onclick="highlightSelectionWithAPIStaticRange()">Highlight selection with API using StaticRange</button>
-<button type="button" onclick="restoreWithAPI()">Clear API highlights</button>
 <br>
 <button type="button" onclick="highlightSelectionWithSpans()">Highlight selection with span</button>
-<button type="button" onclick="restoreWithSpans()">Clear highlighted spans</button>
+<br>
+<button type="button" onclick="clearAllHighlightedText()">Clear all highlighted text</button>
 <br><br>
 <div>The node holding the text above looks as follows in the DOM:</div>
 <xmp id="node-description"></xmp>
@@ -132,11 +134,15 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
     html = div.innerHTML.replaceAll('<span class="highlighted-with-span">',"");
     html = html.replaceAll('</span>',""); // note that this can delete spans with a different class than the used above.
     div.innerHTML = html;
-    showDivContent();
   }
 
   function restoreWithAPI() {
-    CSS.highlights.delete("findings");
+    CSS.highlights.delete("example-highlight");
+  }
+
+  function clearAllHighlightedText(){
+    restoreWithAPI();
+    restoreWithSpans();
     showDivContent();
   }
 </script>

@@ -49,7 +49,7 @@
 <button type="button" onclick="measureTime(restoreWithSpans)">Clear highlighted spans</button>
 <br><br>
 <div>You can also change the number of independent words in the text: </div>
-<input type="number" id="span-quantity" value="1000"> <button type="button" onclick="generateContent()">Regenerate text</button>
+<input type="number" id="span-quantity" value="10000"><button type="button" id="generate-content-button" onclick="generateContent()">Regenerate text</button>
 <br><br>
 <div>Last operation took <span id="performance-span">0</span>ms</div>
 <br>
@@ -85,6 +85,13 @@
     }
     return all;
   }
+
+  // Fire a click event on #generate-content-button when pressing Enter key while in #span-quantity
+  document.querySelector("#span-quantity").addEventListener("keyup", event => {
+    if(event.key !== "Enter") return;
+    document.querySelector("#generate-content-button").click();
+    event.preventDefault();
+  });
 
   /************************************************************************/
 
