@@ -49,22 +49,18 @@
 <button type="button" onclick="measureTime(restoreWithSpans)">Clear highlighted spans</button>
 <br><br>
 <div>You can also change the number of independent words in the text: </div>
-<input type="number" id="span-quantity" placeholder="1000"> <button type="button" onclick="generateContent()">Regenerate text</button>
+<input type="number" id="span-quantity" value="1000"> <button type="button" onclick="generateContent()">Regenerate text</button>
 <br><br>
 <div>Last operation took <span id="performance-span">0</span>ms</div>
 <br>
 <span id="parent-span"></span>
 <script>
   const highlightedWithSpanClass = "highlighted-with-span";
-  document.getElementById("span-quantity").value = document.getElementById("span-quantity").placeholder;
 
   function generateContent() {
     let spansQuantity = document.getElementById("span-quantity").valueAsNumber;
-    let content = '';
-    let loremIpsum = "<span>qwertyuiopasdfghjklzxcvbnm</span><wbr>";
-    for (let i = 0; i < spansQuantity; i++)
-      content += loremIpsum;
-    document.getElementById("parent-span").innerHTML = content;
+    let contentTemplate = "<span>qwertyuiopasdfghjklzxcvbnm</span><wbr>";
+    document.getElementById("parent-span").innerHTML = contentTemplate.repeat(spansQuantity);
   }
 
   generateContent();
@@ -80,43 +76,33 @@
     }, 0));
   }
 
-  function textNodesUnder(node) {
+  function doForEveryTextNode(root, operation) {
     let all = [];
-    for (node = node.firstChild; node; node = node.nextSibling) {
-      if (node.nodeType == 3) all.push(node);
+    for (let node = root.firstChild; node; node = node.nextSibling) {
+      if (node.nodeType == Node.TEXT_NODE) operation(node)
       else if (node.nodeName == "SCRIPT" || node.nodeName == "STYLE") continue;
-      else all = all.concat(textNodesUnder(node));
+      else doForEveryTextNode(node, operation);
     }
     return all;
   }
 
   /************************************************************************/
 
+  const parentSpan = document.getElementById('parent-span');
+
   function highlightWithSpans() {
-    var original = document.getElementById('parent-span'),
-    working = original.cloneNode(true);
-    let nodes = textNodesUnder(working);
-    for (let i = 0; i < nodes.length; i++) {
-      wrapTextWithSpan(nodes[i]);
-    }
-    original.parentNode.replaceChild(working,original);
+    doForEveryTextNode(parentSpan, wrapTextWithSpan);
   }
 
   function highlightWithAPIRanges() {
-    let nodes = textNodesUnder(document.getElementById("parent-span"));
     let highlight = new Highlight();
-    for (let i = 0; i < nodes.length; i++) {
-      wrapTextWithHighlightAPIRange(highlight, nodes[i]);
-    }
+    doForEveryTextNode(parentSpan, (node) => { wrapTextWithHighlightAPIRange(highlight, node) } );
     CSS.highlights.set("example-highlight", highlight);
   }
 
   function highlightWithAPIStaticRanges() {
-    let nodes = textNodesUnder(document.getElementById("parent-span"));
     let highlight = new Highlight();
-    for (let i = 0; i < nodes.length; i++) {
-      wrapTextWithHighlightAPIStaticRange(highlight, nodes[i]);
-    }
+    doForEveryTextNode(parentSpan, (node) => { wrapTextWithHighlightAPIStaticRange(highlight, node) } );
     CSS.highlights.set("example-highlight", highlight);
   }
 
@@ -147,7 +133,7 @@
     let spans = document.getElementsByClassName(highlightedWithSpanClass);
     while(spans.length) {
       let span = spans[0];
-      span.parentNode.insertBefore(document.createTextNode(span.textContent), span);
+      span.parentNode.insertBefore(span.firstChild, span);
       span.parentNode.removeChild(span);
     }
   }
