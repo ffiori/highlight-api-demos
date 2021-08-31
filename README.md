@@ -118,7 +118,7 @@ This demo is a page that allows the user to highlight selected text with the Hig
 
 This demo shows the performance differences of using the Highlight API or wrapping with spans to highlight text. The text is composed by many spans (10000 by default but this number can be changed while running the site) which are highlighted independently. This tries to simulate a situation where a large page is loaded and a find on page instruction is executed with a common string (for example "a"), so we need to highlight a large number of pieces of text. The user can test the different methods of highlighting, and also the time it takes for each approach to clear the highlights.
 
-Some average times for the operations are shown next. Each operation was run 5 times (always from a fresh start) on an Intel i7-1065G7 CPU with 30,000 independent words, and the average times were the following:
+Some average times for the operations are shown next. Each operation was run 5 times (always from a fresh start) on an Intel i7-9700K CPU with 30,000 independent words, and the average times were the following:
 
 ```
 Highlight with API using Ranges: 223ms
