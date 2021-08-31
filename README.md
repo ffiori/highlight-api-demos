@@ -1,8 +1,8 @@
 # Highlight API 
 
-The [Custom Highlight API](https://drafts.csswg.org/css-highlight-api-1/) extends the concept of [highlight pseudo-elements](https://drafts.csswg.org/css-pseudo-4/#highlight-pseudo-element) by providing a way for web developers to style the text of arbitrary range objects ([Ranges](https://dom.spec.whatwg.org/#interface-range) or [StaticRanges](https://dom.spec.whatwg.org/#interface-staticrange)), rather than being limited to the user agent defined ::selection, ::inactive-selection, ::spelling-error, and ::grammar-error. It provides a programmatic way of adding and removing highlights that do not affect the underlying DOM structure, but instead applies styles to text based on range objects, accessed via the ::highlight() pseudo element. This is useful in a variety of scenarios, including editing frameworks that wish to implement their own selection, find-on-page over virtualized documents, multiple selection to represent online collaboration, or spellchecking frameworks.
+The [Custom Highlight API](https://drafts.csswg.org/css-highlight-api-1/) extends the concept of [highlight pseudo-elements](https://drafts.csswg.org/css-pseudo-4/#highlight-pseudo-element) by providing a way for web developers to style the text of arbitrary range objects ([Ranges](https://dom.spec.whatwg.org/#interface-range) or [StaticRanges](https://dom.spec.whatwg.org/#interface-staticrange)), rather than being limited to the user agent defined `::selection`, `::inactive-selection`, `::spelling-error`, and `::grammar-error`. It provides a programmatic way of adding and removing highlights that do not affect the underlying DOM structure, but instead applies styles to text based on range objects, accessed via the `::highlight()` pseudo element. This is useful in a variety of scenarios, including editing frameworks that wish to implement their own selection, find-on-page over virtualized documents, multiple selection to represent online collaboration, or spellchecking frameworks.
 
-This document intends to give a brief introduction to the Highlight API and how to use it, as well as compare performance and ease-of-use with traditional way of highlighting text.
+This document intends to give a brief introduction to the Highlight API and how to use it, as well as compare performance and ease-of-use with a traditional way of highlighting text.
 
 ## How to use it
 
@@ -67,8 +67,8 @@ However, implementing this can be somewhat cumbersome because we need to manipul
 
 - We should be careful not to break other processing of the DOM or cached elements, as the number of children/siblings of a node could change. This means the rest of the webpage should support dynamic changes in the DOM and act accordingly.
 - Some cases are not easy to handle. For example, highlighting a chunk of text that crosses a node boundary.
-- Performance could be impacted due to the DOM growing too much. This could affect operations such as rendering frames or performing other actions needed by the site itself. See Demo 2 for a performance comparison with the Highlight API.
-- Reverting the operation is not easy in non-trivial sites. We should traverse the DOM looking for spans with this specific id or class and delete it while reinserting their content into the same place it was before. Furthermore, this operation could be computationally expensive if the DOM's got too big and there are many highlighted spans to remove.
+- Performance could be impacted due to the DOM growing too much. This could affect operations such as rendering frames or performing other actions needed by the site itself. See [Demo 2](https://github.com/ffiori/highlight-api-demos/tree/add-readme#demo-2-performance-of-both-approaches) for a performance comparison with the Highlight API.
+- Reverting the operation is not easy in non-trivial sites. We should traverse the DOM looking for spans with this specific id or class and delete them while reinserting their content into the same place it was before. Furthermore, this operation could be computationally expensive if the DOM's got too big and there are many highlighted spans to remove.
 
 Here is a possible way of implementing this technique to highlight selected text that would only work for simple sites:
 
@@ -108,7 +108,7 @@ Here is a possible way of implementing this technique to highlight selected text
 
 ## Examples
 
-This section describes two examples of sites that make use of the Highlight API and intend to compare it to using spans to achieve the same goal. Note that, to be able to run the demos, Edge >93 or Chrome >93 is needed, and the browser should have the flag --enable-experimental-web-platform-features enabled (it can be turned on in edge://flags or chrome://flags under the name of 'Experimental Web Platform Features').
+This section describes two examples of sites that make use of the Highlight API and intend to compare it to using spans to achieve the same goal. Note that, to be able to run the demos, Edge or Chrome >= 93 is needed (although it's recommended to use >= 95 for testing including the latest patches), and the browser should run with the flag `--enable-experimental-web-platform-features` enabled (it can be turned on in [edge://flags](edge://flags/#enable-experimental-web-platform-features) or [chrome://flags](chrome://flags/#enable-experimental-web-platform-features) under the name of 'Experimental Web Platform features').
 
 ### Demo 1: Compare highlighting with and without using the API
 
@@ -116,7 +116,7 @@ This demo is a page that allows the user to highlight selected text with the Hig
 
 ### Demo 2: Performance of both approaches
 
-This demo shows the performance differences of using the Highlight API or wrap with spans to highlight text. The text is composed by many spans (10000 by default but this number can be changed while running the site) which are highlighted independently. This tries to simulate a situation where a big page is loaded and a find on page instruction is executed with a common string (for example "a"), so we need to highlight a large number of pieces of text. The user can test the different methods of highlighting, and also the time it takes for each approach to clear the highlights.
+This demo shows the performance differences of using the Highlight API or wrapping with spans to highlight text. The text is composed by many spans (10000 by default but this number can be changed while running the site) which are highlighted independently. This tries to simulate a situation where a large page is loaded and a find on page instruction is executed with a common string (for example "a"), so we need to highlight a large number of pieces of text. The user can test the different methods of highlighting, and also the time it takes for each approach to clear the highlights.
 
 Some average times for the operations are shown next. Each operation was run 5 times (always from a fresh start) on an Intel i7-1065G7 CPU with 30,000 independent words, and the average times were the following:
 
