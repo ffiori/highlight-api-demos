@@ -52,29 +52,30 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
   const highlightedWithSpanClass = "highlighted-with-span";
 
   function showDivContent() {
-    let text = document.getElementById("example-div").outerHTML;
-    const openSpanString = `<span class="${highlightedWithSpanClass}">`;
-    const closeSpanString = '</span>';
-    let indentString = '\n';
-    for(let i = 0; i<text.length;) {
-      if(text.substr(i, openSpanString.length) === openSpanString) {
-        text = text.substring(0,i) + indentString + openSpanString + indentString + '\t' + text.substring(i+openSpanString.length);
-        i += indentString.length*2 + 1 + openSpanString.length;
-        indentString += '\t';
+    const root = document.getElementById("example-div");
+    document.getElementById("node-description").innerText =
+      `<div id="example-div">${showDivContentImpl(root, 0)}</div>`;
+  }
+
+  function showDivContentImpl(root, indentLevel) {
+    let text = "";
+    const indentString = " ".repeat(indentLevel * 4);
+
+    for (let sibling = root.firstChild; sibling != null; sibling = sibling.nextSibling) {
+      if (sibling.nodeType === Node.TEXT_NODE) {
+        text += `\n${indentString}${sibling.textContent.trim()}`;
+      } else if (sibling.matches(`span.${highlightedWithSpanClass}`)) {
+        text += `\n${indentString}<span class="${highlightedWithSpanClass}">`;
+        text += showDivContentImpl(sibling, indentLevel + 1);
+        text += `\n${indentString}</span>`;
+      } else if (sibling.matches("br")) {
+        text += "<br>";
+      } else {
+        throw("Unexpected node in showDivContent!");
       }
-      else if(text.substr(i, closeSpanString.length) === closeSpanString) {
-        indentString = indentString.substr(0,indentString.length-1);
-        text = text.substring(0,i) + indentString + closeSpanString + indentString + text.substring(i+closeSpanString.length);
-        i += indentString.length*2 + closeSpanString.length;
-      }
-      else if(text.substr(i, 5) === "<br>\n") {
-        text = text.substring(0,i) + "<br>" + indentString + text.substring(i + 5);
-        i += indentString.length + 4;
-      }
-      else { i++; }
     }
-    text = text.replaceAll(/\n\t*\n/g,"\n");
-    document.getElementById("node-description").innerText = text;
+
+    return text;
   }
 
   showDivContent();
