@@ -23,7 +23,7 @@
     margin-bottom: 4px;
   }
 
-  #div {
+  #example-div {
     font-size: 40;
   }
 
@@ -32,9 +32,9 @@
   }
 </style>
 <body>
-<div id="div">
-Now you can give me format with the brand new Highlight API!<br>
-Just select a part of me and click on the buttons below &#128512;<br>
+<div id="example-div">
+Now you can format text with the brand new Highlight API!<br>
+Just select a part of this text and click on the buttons below &#128512;<br>
 You can also do the same with the traditional way of wrapping text with a span.<br>
 As a bonus, you can observe what happens with the DOM by using one method or another.<br>
 </div>
@@ -47,16 +47,16 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
 <button type="button" onclick="clearAllHighlightedText()">Clear all highlighted text</button>
 <br><br>
 <div>The node holding the text above looks as follows in the DOM:</div>
-<xmp id="node-description"></xmp>
+<pre id="node-description"></pre>
 <script>
   const highlightedWithSpanClass = "highlighted-with-span";
 
   function showDivContent() {
-    let text = document.getElementById("div").outerHTML;
+    let text = document.getElementById("example-div").outerHTML;
     const openSpanString = `<span class="${highlightedWithSpanClass}">`;
     const closeSpanString = '</span>';
-    var indentString = '\n';
-    for(var i = 0; i<text.length;) {
+    let indentString = '\n';
+    for(let i = 0; i<text.length;) {
       if(text.substr(i, openSpanString.length) === openSpanString) {
         text = text.substring(0,i) + indentString + openSpanString + indentString + '\t' + text.substring(i+openSpanString.length);
         i += indentString.length*2 + 1 + openSpanString.length;
@@ -74,7 +74,7 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
       else { i++; }
     }
     text = text.replaceAll(/\n\t*\n/g,"\n");
-    document.getElementById("node-description").innerHTML = text;
+    document.getElementById("node-description").innerText = text;
   }
 
   showDivContent();
@@ -126,14 +126,9 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
   /************************************************************************/
 
   function restoreWithSpans() {
-    // WARNING: this way of restoring the original spans is not ideal to be used
-    // in all situations. There may be better ways to do it depending on the
-    // application.
-    let div = document.getElementById("div");
-    let html = div.innerHTML;
-    html = div.innerHTML.replaceAll('<span class="highlighted-with-span">',"");
-    html = html.replaceAll('</span>',""); // note that this can delete spans with a different class than the used above.
-    div.innerHTML = html;
+    document.querySelectorAll("#example-div span").forEach(span => {
+      span.parentElement.insertBefore(span.firstChild, span); span.remove();
+    });
   }
 
   function restoreWithAPI() {
