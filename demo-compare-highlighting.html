@@ -127,7 +127,8 @@ As a bonus, you can observe what happens with the DOM by using one method or ano
 
   function restoreWithSpans() {
     document.querySelectorAll("#example-div span").forEach(span => {
-      span.parentElement.insertBefore(span.firstChild, span); span.remove();
+      span.parentElement.insertBefore(span.firstChild, span);
+      span.remove();
     });
   }
 
