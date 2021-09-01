@@ -91,7 +91,10 @@ Here is a possible way of implementing this technique to highlight selected text
       window.getSelection().getRangeAt(0).surroundContents(span);
     }
     catch (error) {
-      ; // Treat error
+      // Treat error, as the try block can fail if selection crosses only one
+      // boundary of another node, for example, when it crosses a <span> but
+      // not the closing </span>.
+      ;
     }
   }
 
