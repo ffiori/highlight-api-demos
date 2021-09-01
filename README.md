@@ -31,7 +31,7 @@ In order to have any effect, custom highlights need to be registered into the hi
 
 In the case above, a custom highlight is registered under the name 'foo', so all ranges contained in it will be styled with text color blue, as specified in the style section.
 
-Finally, the next example shows a simple way of highlighting selected text with the Highlight API:
+Finally, the next example shows a simple way of applying styles to the currently selected text with the Highlight API:
 
 ```Javascript
 <style>
@@ -59,7 +59,8 @@ Finally, the next example shows a simple way of highlighting selected text with 
 
 ## How to highlight text *without* the Highlight API
 
-Traditionally, a common way to highlight different pieces of text dynamically in a webpage is to just wrap the content with a new `<span>` with a particular class or id that is given a specific style. An example of this technique can be found in [chromium code search](https://source.chromium.org)'s custom find on page, where if you look for text inside a source code file, the site highlights all matching strings with new spans. An actual screenshot is show next:
+Traditionally, a common way to highlight different pieces of text dynamically in a webpage is to just wrap the content with a new `<span>` with a particular class or id that is given a specific style. An example of this technique can be found in [chromium code search](https://source.chromium.org)'s custom find-on-page, where if you look for text inside a source code file, the site highlights all matching strings with new spans. An actual screenshot is shown next:
+
 
 ![Screenshot of real-life example of wrapping text with spans to highlight find-on-page results in Chromium Code Search](resources/custom-find-on-page-spans.png)
 
@@ -67,7 +68,8 @@ However, implementing this can be somewhat cumbersome because we need to manipul
 
 - We should be careful not to break other processing of the DOM or cached elements, as the number of children/siblings of a node could change. This means the rest of the webpage should support dynamic changes in the DOM and act accordingly.
 - Some cases are not easy to handle. For example, highlighting a chunk of text that crosses a node boundary.
-- Performance could be impacted due to the DOM growing too much. This could affect operations such as rendering frames or performing other actions needed by the site itself. See [Demo 2](https://github.com/ffiori/highlight-api-demos/tree/add-readme#demo-2-performance-of-both-approaches) for a performance comparison with the Highlight API.
+- Performance could be impacted due to the cost of allocating the `<span>`s and adding them to the DOM, including the cost of rerunning layout. This could affect operations such as rendering frames or performing other actions needed by the site itself. See [Demo 2](https://github.com/ffiori/highlight-api-demos/tree/add-readme#demo-2-performance-of-both-approaches) for a performance comparison with the Highlight API.
+
 - Reverting the operation is not easy in non-trivial sites. We should traverse the DOM looking for spans with this specific id or class and delete them while reinserting their content into the same place it was before. Furthermore, this operation could be computationally expensive if the DOM's got too big and there are many highlighted spans to remove.
 
 Here is a possible way of implementing this technique to highlight selected text that would only work for simple sites:
@@ -108,7 +110,8 @@ Here is a possible way of implementing this technique to highlight selected text
 
 ## Examples
 
-This section describes two examples of sites that make use of the Highlight API and intend to compare it to using spans to achieve the same goal. Note that, to be able to run the demos, Edge or Chrome >= 93 is needed (although it's recommended to use >= 95 for testing including the latest patches), and the browser should run with the flag `--enable-experimental-web-platform-features` enabled (it can be turned on in [edge://flags](edge://flags/#enable-experimental-web-platform-features) or [chrome://flags](chrome://flags/#enable-experimental-web-platform-features) under the name of 'Experimental Web Platform features').
+This section describes two demos that make use of the Highlight API and intend to compare it to using spans to achieve the same goal. Note that, to be able to run the demos, Edge or Chrome >= 93 is needed (although it's recommended to use >= 95 for testing including the latest patches), and the browser should run with the flag `--enable-experimental-web-platform-features` enabled (it can be turned on in [edge://flags](edge://flags/#enable-experimental-web-platform-features) or [chrome://flags](chrome://flags/#enable-experimental-web-platform-features) under the name of 'Experimental Web Platform features').
+
 
 ### Demo 1: Compare highlighting with and without using the API
 
