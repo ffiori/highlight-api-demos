@@ -137,9 +137,11 @@
   /************************************************************************/
 
   function restoreWithSpans() {
-    let spans = document.getElementsByClassName(highlightedWithSpanClass);
-    while(spans.length) {
-      let span = spans[0];
+    while (true) {
+      const span = document.querySelector(`.highlighted-with-span`);
+      if (!span) {
+        break
+      }
       span.parentNode.insertBefore(span.firstChild, span);
       span.parentNode.removeChild(span);
     }
