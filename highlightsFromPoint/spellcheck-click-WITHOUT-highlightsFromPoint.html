@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spellcheck Demo using Manual Hit Detection</title>
+    
+    <style>
+        /* Main text container styling */
+        div#text {
+            padding: 20px;
+            font-size: 22px;
+            line-height: 1.5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            min-height: 200px;
+        }
+        
+        /* Spelling error highlight - red wavy underline */
+        div::highlight(spellcheck-highlight) {
+            text-decoration-color: red;
+            text-decoration-style: wavy;
+            text-decoration-line: underline;
+            text-decoration-thickness: 0.5px;
+        }
+          /* Active spelling error highlight - orange background on click */
+        div::highlight(active-spellcheck-highlight) {
+            background-color: rgba(255, 48, 0, 0.25);
+        }
+        
+        /* Grammar error highlight - blue double underline */
+        div::highlight(grammar-highlight) {
+            text-decoration-color: blue;
+            text-decoration-style: double;
+            text-decoration-line: underline;
+            text-decoration-thickness: 0.3px;
+        }
+        
+        /* Active grammar error highlight - blue background on click */
+        div::highlight(active-grammar-highlight) {
+            background-color: rgba(0, 85, 204, 0.25);
+        }
+        
+        /* Suggestion tooltip box */
+        #cursorBox {
+            position: absolute;
+            background-color: white;
+            padding: 8px 12px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            font-size: 14px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        /* Body styling */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Spellcheck Demo using Manual Hit Detection</h1>
+      <div class="instructions">
+        <strong>Instructions:</strong> Click on the underlined words to see spelling/grammar suggestions and highlight the word with a background color.
+    </div>
+    
+    <div id="text" contenteditable="true" spellcheck="false">
+        Tihs is a misspelled word.<br>
+        This textt has more spellin errors and one grammar errors.<br>
+    </div>
+      <div id="cursorBox"></div>
+    
+    <!-- Performance Test Button -->
+    <div style="margin-top: 20px; text-align: center;">
+        <button id="runPerformanceTest" style="background: linear-gradient(135deg, #FF9800, #F57C00); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3); transition: all 0.3s ease;">
+            ⚡ Run Performance Test
+        </button>
+        <div id="testProgress" style="margin-top: 10px; color: #666; font-size: 14px; display: none;">
+            Running performance tests... Please wait.
+        </div>
+    </div>
+    
+      <!-- Performance Results Display -->
+    <div id="performanceResults" style="margin-top: 20px; padding: 20px; background: linear-gradient(135deg, #fff3e0 0%, #fff8f0 100%); border: 2px solid #FF9800; border-radius: 12px; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.15); display: none;">
+        <h3 style="margin: 0 0 15px 0; font-family: 'Segoe UI', sans-serif; color: #F57C00; font-size: 18px; text-align: center;">⚡ Performance Test Results</h3>
+        <div style="text-align: center; margin-bottom: 10px; color: #666; font-size: 14px;">Manual Hit Detection</div>
+        <div id="performanceOutput" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;"></div>
+    </div>
+<script>
+    // =========================================================================
+    // DOM ELEMENTS AND GLOBAL VARIABLES
+    // =========================================================================
+    
+    const cursorBox = document.getElementById('cursorBox');
+    const textNode = document.getElementById('text');
+    
+    // =========================================================================
+    // HIGHLIGHT SETUP - Define spelling and grammar error ranges
+    // =========================================================================    
+    const spellingRanges = [
+        new StaticRange({startContainer: textNode.childNodes[0], startOffset: 9, endContainer: textNode.childNodes[0], endOffset: 13}), // "Tihs" 
+        new StaticRange({startContainer: textNode.childNodes[2], startOffset: 14, endContainer: textNode.childNodes[2], endOffset: 19}), // "textt"
+        new StaticRange({startContainer: textNode.childNodes[2], startOffset: 29, endContainer: textNode.childNodes[2], endOffset: 36}) // "spellin"
+    ];
+    
+    // Define ranges for grammar errors: "errors" (should be "error")
+    // Using the second occurrence at offset 60-66
+    const grammarRanges = [
+        new StaticRange({startContainer: textNode.childNodes[2], startOffset: 60, endContainer: textNode.childNodes[2], endOffset: 66}) // "errors"
+    ];
+    
+    // Create and register highlight objects
+    const spellingHighlight = new Highlight(...spellingRanges);
+    CSS.highlights.set('spellcheck-highlight', spellingHighlight);
+    
+    const grammarHighlight = new Highlight(...grammarRanges);
+    CSS.highlights.set('grammar-highlight', grammarHighlight);
+    
+    // Create active highlight objects for hover effects
+    const spellingHighlightActive = new Highlight();
+    CSS.highlights.set('active-spellcheck-highlight', spellingHighlightActive);
+    
+    const grammarHighlightActive = new Highlight();
+    CSS.highlights.set('active-grammar-highlight', grammarHighlightActive);
+    
+    // =========================================================================
+    // SUGGESTION MAPPINGS
+    // =========================================================================
+    
+    // Map each highlight to its corresponding active highlight
+    const highlightToActiveHighlight = new Map([
+        [spellingHighlight, spellingHighlightActive],
+        [grammarHighlight, grammarHighlightActive]
+    ]);
+    
+    // Map misspelled words to their suggested corrections
+    const spellcheckerSuggestion = new Map([
+        ["Tihs", "This"],
+        ["textt", "text"],
+        ["spellin", "spelling"],
+        ["errors", "error"]
+    ]);
+    
+    // =========================================================================
+    // UTILITY FUNCTIONS
+    // =========================================================================
+    
+    /**
+     * Clears all active highlights and hides the suggestion box
+     */
+    function resetActiveHighlights() {
+        spellingHighlightActive.clear();
+        grammarHighlightActive.clear();
+        cursorBox.style.display = 'none';
+        cursorBox.textContent = '';
+    }
+    
+    /**
+     * Extracts text content from an AbstractRange object
+     * @param {AbstractRange} abstractRange - The range to extract text from
+     * @returns {string} The text content of the range
+     */
+    function getTextFromAbstractRange(abstractRange) {
+        const range = new Range();
+        range.setStart(abstractRange.startContainer, abstractRange.startOffset);
+        range.setEnd(abstractRange.endContainer, abstractRange.endOffset);
+        return range.toString();
+    }
+    
+    /**
+     * Activates a highlight and shows the suggestion tooltip
+     * @param {Highlight} highlight - The highlight object to activate
+     * @param {AbstractRange} range - The range within the highlight
+     * @param {number} x - Mouse X coordinate
+     * @param {number} y - Mouse Y coordinate
+     */
+    function setActiveHighlight(highlight, range, x, y) {
+        const activeHighlight = highlightToActiveHighlight.get(highlight);
+        if (activeHighlight == undefined) {
+            return;
+        }
+        
+        // Add the range to the active highlight
+        activeHighlight.add(range);
+        
+        // Show suggestion in tooltip
+        const suggestion = spellcheckerSuggestion.get(getTextFromAbstractRange(range));
+        cursorBox.textContent = suggestion || 'No suggestion';
+        cursorBox.style.display = 'block';
+        
+        // Position tooltip near cursor
+        cursorBox.style.left = (x + 2) + 'px';
+        cursorBox.style.top = (y - cursorBox.getBoundingClientRect().height - 6) + 'px';
+    }
+      /**
+     * Checks if a point is inside a DOM rectangle
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @param {DOMRect} rect - Rectangle to check against
+     * @returns {boolean} True if point is inside rectangle
+     */
+    function isPointInsideDOMRect(x, y, rect) {
+        return (
+            x >= rect.left && x <= rect.right &&
+            y >= rect.top && y <= rect.bottom
+        );
+    }
+
+    /**
+     * Main function to create active highlights based on cursor position
+     * Uses manual hit detection by checking each highlight's client rectangles
+     * @param {number} x - Mouse X coordinate
+     * @param {number} y - Mouse Y coordinate
+     */
+    function createActiveHighlights(x, y) {
+        resetActiveHighlights();
+        
+        // Iterate through all highlights and check if cursor is over any of them
+        for (const highlight of CSS.highlights.values()) {
+            for (const highlightAbstractRange of highlight.values()) {
+                // Need to create a Range for getClientRects() because it can be a StaticRange
+                const range = new Range();
+                range.setStart(highlightAbstractRange.startContainer, highlightAbstractRange.startOffset);
+                range.setEnd(highlightAbstractRange.endContainer, highlightAbstractRange.endOffset);
+                
+                let rangeIsHit = false;
+                // Check each client rectangle of the range
+                for (const rect of range.getClientRects()) {
+                    if (isPointInsideDOMRect(x, y, rect)) {
+                        setActiveHighlight(highlight, highlightAbstractRange, x, y);
+                        rangeIsHit = true;
+                        break;
+                    }
+                }
+                
+                // If we found a hit, stop looking for more highlights
+                if (rangeIsHit) {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // =========================================================================
+    // EVENT LISTENERS
+    // =========================================================================
+    
+    // Activate highlights on click instead of hover
+    document.addEventListener('click', (event) => {
+        createActiveHighlights(event.pageX, event.pageY);
+    });
+    
+    // Hide tooltip when mouse moves (no longer activating highlights on hover)
+    document.addEventListener('mousemove', (event) => {
+        resetActiveHighlights();
+    });
+    
+    // =========================================================================
+    // PERFORMANCE TESTING
+    // =========================================================================
+    
+    let accumulatedTime = 0;
+    let eventsFired = 0;
+    
+    // Click event for performance testing
+    document.addEventListener('click', (event) => {
+        const start = performance.now();
+        createActiveHighlights(event.pageX, event.pageY);
+        const duration = performance.now() - start;
+        accumulatedTime += duration;
+        eventsFired++;
+    });
+    
+    /**
+     * Utility function for async delays in testing
+     * @param {number} ms - Milliseconds to wait
+     * @returns {Promise} Promise that resolves after the delay
+     */
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }    /**
+     * Performance testing function
+     * Compares performance of highlighting on vs off highlights
+     */
+    async function testPerformance() {
+        const performanceDiv = document.getElementById('performanceResults');
+        const outputDiv = document.getElementById('performanceOutput');
+        const button = document.getElementById('runPerformanceTest');
+        const progress = document.getElementById('testProgress');
+        
+        // Show progress and disable button
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        progress.style.display = 'block';
+        
+        // Create a mock mouse click event
+        const mouseclickEvent = new Event('click');
+        
+        // Target the "spellin" highlight for testing
+        const highlightRange = new Range();
+        highlightRange.setStart(textNode.childNodes[2], 29);
+        highlightRange.setEnd(textNode.childNodes[2], 36);
+        const rangeRect = highlightRange.getClientRects()[0];
+        
+        mouseclickEvent.pageX = rangeRect.left + rangeRect.width / 2.0;
+        mouseclickEvent.pageY = rangeRect.top + rangeRect.height / 2.0;
+        
+        // Add many highlights to stress test the system
+        console.log('Adding 100 additional highlights for stress testing...');
+        for (let i = 0; i < 100; i++) {
+            const h = new Highlight(new StaticRange({
+                startContainer: textNode.childNodes[0], 
+                startOffset: 1, 
+                endContainer: textNode.childNodes[0], 
+                endOffset: 5
+            }));
+            const name = "highlight-" + i;
+            CSS.highlights.set(name, h);
+        }
+        
+        // Warm up - first dispatches can be outliers
+        console.log('Warming up with 100 events...');
+        for (let i = 0; i < 100; i++) {
+            document.dispatchEvent(mouseclickEvent);
+        }
+        await wait(100);
+        
+        // Test 1: Performance on highlights
+        console.log('Testing performance ON highlights (1000 events)...');
+        accumulatedTime = 0;
+        eventsFired = 0;
+        for (let i = 0; i < 1000; i++) {
+            document.dispatchEvent(mouseclickEvent);
+        }
+        await wait(1000);
+        const onHighlightsTime = (accumulatedTime / eventsFired).toFixed(4);
+        console.log(`Average time on highlights: ${onHighlightsTime}ms`);
+        
+        // Test 2: Performance outside highlights
+        console.log('Testing performance OUTSIDE highlights (1000 events)...');
+        mouseclickEvent.pageY = rangeRect.top - 1; // Move outside highlight area
+        accumulatedTime = 0;
+        eventsFired = 0;
+        for (let i = 0; i < 1000; i++) {
+            document.dispatchEvent(mouseclickEvent);
+        }
+        await wait(1000);
+        const outsideHighlightsTime = (accumulatedTime / eventsFired).toFixed(4);
+        console.log(`Average time outside highlights: ${outsideHighlightsTime}ms`);
+        
+        // Display results in a pretty format
+        const difference = (parseFloat(onHighlightsTime) - parseFloat(outsideHighlightsTime)).toFixed(4);
+        const winner = parseFloat(onHighlightsTime) < parseFloat(outsideHighlightsTime) ? 'On highlights' : 'Outside highlights';
+        
+        outputDiv.innerHTML = `
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="font-weight: bold; color: #F57C00; margin-bottom: 8px; font-size: 14px;">📍 On Highlights</div>
+                <div style="font-size: 24px; font-weight: bold; color: #333;">${onHighlightsTime}ms</div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">Average per operation</div>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="font-weight: bold; color: #F57C00; margin-bottom: 8px; font-size: 14px;">📍 Outside Highlights</div>
+                <div style="font-size: 24px; font-weight: bold; color: #333;">${outsideHighlightsTime}ms</div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">Average per operation</div>
+            </div>
+            <div style="grid-column: 1 / -1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; margin-top: 10px;">
+                <div style="font-weight: bold; color: #F57C00; margin-bottom: 8px; font-size: 14px;">📊 Performance Difference</div>
+                <div style="font-size: 18px; font-weight: bold; color: ${parseFloat(difference) > 0 ? '#F57C00' : '#4CAF50'};">
+                    ${Math.abs(parseFloat(difference))}ms ${parseFloat(difference) > 0 ? 'slower' : 'faster'} on highlights
+                </div>
+                <div style="font-size: 12px; color: #666; margin-top: 4px;">Based on 1000 operations each</div>
+            </div>
+        `;
+        
+        // Hide progress, re-enable button, show results
+        progress.style.display = 'none';
+        button.disabled = false;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+        button.textContent = '🔄 Run Test Again';
+        performanceDiv.style.display = 'block';
+        
+        console.log('Performance testing complete!');
+    }
+    
+    // Add button event listener
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('runPerformanceTest').addEventListener('click', testPerformance);
+    });
+</script>
+</body>
+</html>
